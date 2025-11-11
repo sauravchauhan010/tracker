@@ -33,33 +33,13 @@
   .amount-box { display:flex; flex-wrap:wrap; gap:5px; justify-content:center; align-items:center; }
   .amount-box input { flex:1 1 45%; min-width:70px; }
   .amount-box label { font-size:12px; margin:0 5px; white-space:nowrap; }
-  #logo { position:absolute; top:10px; left:10px; width:60px; height:auto; }
-  footer { position:fixed; bottom:0; right:0; background:#007bff; color:white; padding:5px 15px; border-radius:8px 0 0 0; font-size:14px; }
-  .profile { position:absolute; top:10px; right:30px; }
-  .dropdown { position:relative; display:inline-block; }
-  .dropdown-content { display:none; position:absolute; background-color:white; min-width:120px; box-shadow:0px 8px 16px 0px rgba(0,0,0,0.2); z-index:1000; border-radius:5px; }
-  .dropdown-content button { width:100%; padding:5px; text-align:left; background:none; border:none; cursor:pointer; font-size:13px; }
-  .dropdown-content button:hover { background:#007bff; color:white; }
-  .dropdown:hover .dropdown-content { display:block; }
-  .auth-date { appearance: none; -webkit-appearance: none; -moz-appearance: none; border: none; background: transparent; color: #333; font-size: 13px; padding: 4px; cursor: text; text-align: center; width: 120px; transition: all 0.2s ease; }
-  .auth-date:focus { outline: none; border-bottom: 1px solid #007bff; background: #f9f9f9; }
+  .auth-date { appearance:none; border:none; background:transparent; color:#333; font-size:13px; padding:4px; cursor:text; text-align:center; width:120px; transition: all 0.2s ease; }
+  .auth-date:focus { outline:none; border-bottom:1px solid #007bff; background:#f9f9f9; }
 </style>
 </head>
 <body>
 
-<img src="123.png" id="logo" alt="Logo" style="width:150px; height:auto;">
-
-<div class="profile">
-  <div class="dropdown">
-    <button class="btn">Profile ▾</button>
-    <div class="dropdown-content">
-        <button onclick=""><b>SAURAV CHAUHAN</b></button>
-      <button onclick="createPDF()">Create PDF</button>
-      <button onclick="createJSON()">Create JSON</button>
-      <button onclick="uploadJSON()">Upload JSON</button>
-    </div>
-  </div>
-</div>
+<h1>Multi-Sheet Tracker</h1>
 
 <div class="tabs">
   <button class="tab-btn active" onclick="showSheet('api')">API Integration</button>
@@ -70,13 +50,13 @@
 
 <div class="search-container">
   <input type="text" id="searchBox" placeholder="Search..." oninput="filterTable()">
-  <input type="date" id="searchDate" placeholder="Search by Date..." onchange="filterTable()" style="display:none;">
+  <input type="date" id="searchDate" onchange="filterTable()" style="display:none;">
   <button class="btn" id="clearDateBtn" onclick="clearDateFilter()" style="display:none;">Clear</button>
 </div>
 
 <div style="text-align:center; margin:10px 0;">
   <button class="btn" onclick="addRow()">+ Add</button>
-  <button class="btn" onclick="saveToGoogleSheet()">Save to Sheet</button>
+  <button class="btn" onclick="saveToSheet()">💾 Save to Sheet</button>
 </div>
 
 <div class="table-container">
@@ -96,14 +76,11 @@
   </div>
 </div>
 
-<footer>Developed by <b>SAURAV CHAUHAN</b></footer>
-
 <script>
-const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbzBWeiSX3i06BgYXEfnsK-Pe-39w2pQRRzCbv4Nvf8psxZJN_AS5Upl7lyFTJCWhTHH/exec"; // replace with your deployed Apps Script webapp URL
-
+const WEBAPP_URL = "https://script.google.com/macros/s/AKfycby_qbl1Biv1k8QnYNml2wSfTt9gubPeUqetXBG6P5cSHBTJjmGGIhmP5C1kdBVR2I33/exec"; // replace with your Apps Script URL
 let currentSheet = 'api';
 let currentRemarkIndex = null;
-let sheetData = {api:[], white:[], credit:[], auth:[]};
+
 const sheetColumns = {
   api:["#", "AGT Code","Company Name","Info Sent","Info Received","Trade","VAT","Service","XML","NDA","Docs Sent","Received Docs","Invoice","Bill Number","Teams Group","Sent to Sowmya","Testing Started","Live Token","Remarks","Actions"],
   white:["#", "AGT Code","Company Name","Info Sent","Info Received","Trade","VAT","Service","Agreement","NDA","Docs Sent","Received Docs","Invoice","Bill Number","Teams Group","Sent to Sowmya","Testing Started","Live Token","Remarks","Actions"],
@@ -111,14 +88,17 @@ const sheetColumns = {
   auth:["#", "AGT Code","Company Name","Sales Person","Remarks","Date","Actions"]
 };
 
-async function showSheet(sheet){
+let dataStore = {api:[], white:[], credit:[], auth:[]};
+
+// ---------- FUNCTIONS ----------
+function showSheet(sheet){
   currentSheet = sheet;
-  document.querySelectorAll('.tab-btn').forEach(btn=>btn.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.querySelector(`.tab-btn[onclick*="${sheet}"]`).classList.add('active');
-  document.getElementById('searchDate').style.display = (sheet==='auth') ? 'block' : 'none';
-  document.getElementById('clearDateBtn').style.display = (sheet==='auth') ? 'inline-block' : 'none';
+  document.getElementById('searchDate').style.display = sheet==='auth'?'block':'none';
+  document.getElementById('clearDateBtn').style.display = sheet==='auth'?'inline-block':'none';
   updateTableHead();
-  await loadData();
+  loadData();
 }
 
 function updateTableHead(){
@@ -126,159 +106,113 @@ function updateTableHead(){
 }
 
 function addRow(){
-  const base = {agtCode:'', companyName:'', infoSent:false, infoReceived:false, trade:false, vat:false, service:false, xml:false, nda:false, docsSent:false, docsReceived:false, invoice:false, billNumber:'', teams:false, sentSowmya:false, testing:false, live:false, remarks:''};
-  if(currentSheet==='credit') base.credit=false, base.status='Not Approved', base.amountMode='Online', base.amountOnline='', base.amountOffline='';
-  if(currentSheet==='auth') base.salesPerson='', base.date=new Date().toISOString().split('T')[0];
-  sheetData[currentSheet].push(base);
+  const row = {};
+  sheetColumns[currentSheet].forEach(c => row[c]='');
+  if(currentSheet==='auth') row['Date'] = new Date().toISOString().split('T')[0];
+  dataStore[currentSheet].push(row);
   loadData();
 }
 
-function checkbox(item,index,field){ return `<td><input type="checkbox" class="checkbox" ${item[field]?'checked':''} onchange="updateData(${index},'${field}',this.checked)"></td>`;}
-
-function updateData(index,field,value){
-  sheetData[currentSheet][index][field] = value;
-}
-
-async function loadData(){
-  try {
-    const res = await fetch(`${WEBAPP_URL}?sheet=${currentSheet}`);
-    const data = await res.json();
-    sheetData[currentSheet] = data.map(item=>{
-      // Convert true/false strings if needed
-      for(let key in item) if(item[key]==="TRUE") item[key]=true; else if(item[key]==="FALSE") item[key]=false;
-      return item;
-    });
-  } catch(err){
-    console.warn("Could not fetch sheet data, using local data.");
-  }
-
+function loadData(){
   const tbody = document.getElementById('trackerBody'); tbody.innerHTML='';
-  sheetData[currentSheet].forEach((item,index)=>{
-    let rowHtml=`<tr><td>${index+1}</td>
-      <td contenteditable="true" oninput="updateData(${index},'agtCode',this.innerText)">${item.agtCode||''}</td>
-      <td contenteditable="true" oninput="updateData(${index},'companyName',this.innerText)">${item.companyName||''}</td>`;
-
-    if(currentSheet==='auth'){
-      rowHtml+=`<td contenteditable="true" oninput="updateData(${index},'salesPerson',this.innerText)">${item.salesPerson||''}</td>`;
-      rowHtml+=`<td><button class="btn" onclick="openRemarks(${index})">📝</button></td>`;
-      rowHtml+=`<td><input type="date" class="auth-date" value="${item.date||new Date().toISOString().split('T')[0]}" onchange="updateData(${index},'date',this.value)"></td>`;
-    } else if(currentSheet==='credit'){
-      rowHtml+=checkbox(item,index,'infoSent')+checkbox(item,index,'infoReceived')+checkbox(item,index,'trade')+checkbox(item,index,'vat')+checkbox(item,index,'service')+checkbox(item,index,'credit')+checkbox(item,index,'docsSent')+checkbox(item,index,'docsReceived');
-      rowHtml+=`<td><select onchange="updateData(${index},'status',this.value)">
-        <option ${item.status==='Approved'?'selected':''}>Approved</option>
-        <option ${item.status==='Not Approved'?'selected':''}>Not Approved</option></select></td>`;
-      rowHtml+=`<td><select onchange="updateData(${index},'amountMode',this.value); toggleAmountInputs(${index})">
-        <option ${item.amountMode==='Online'?'selected':''}>Online</option>
-        <option ${item.amountMode==='Offline'?'selected':''}>Offline</option>
-        <option ${item.amountMode==='Both'?'selected':''}>Both</option></select>
-        <div id="amountDiv-${index}" class="amount-box"></div></td>`;
-      rowHtml+=`<td><button class="btn" onclick="openRemarks(${index})">📝</button></td>`;
-    } else {
-      rowHtml+=checkbox(item,index,'infoSent')+checkbox(item,index,'infoReceived')+checkbox(item,index,'trade')+checkbox(item,index,'vat')+checkbox(item,index,'service')+checkbox(item,index,'xml')+checkbox(item,index,'nda')+checkbox(item,index,'docsSent')+checkbox(item,index,'docsReceived')+checkbox(item,index,'invoice');
-      rowHtml+=`<td contenteditable="true" oninput="updateData(${index},'billNumber',this.innerText)">${item.billNumber||''}</td>`;
-      rowHtml+=checkbox(item,index,'teams')+checkbox(item,index,'sentSowmya')+checkbox(item,index,'testing')+`<td><input type="checkbox" ${item.live?'checked':''} class="checkbox" onchange="updateData(${index},'live',this.checked)"></td>`;
-      rowHtml+=`<td><button class="btn" onclick="openRemarks(${index})">📝</button></td>`;
-    }
-
+  dataStore[currentSheet].forEach((item,index)=>{
+    let rowHtml = `<tr><td>${index+1}</td>`;
+    const keys = Object.keys(item);
+    keys.slice(1,-1).forEach(k=>{
+      if(currentSheet==='auth' && k==='Date'){
+        rowHtml+=`<td><input type="date" class="auth-date" value="${item[k]}" onchange="updateData(${index},'${k}',this.value)"></td>`;
+      } else if(k==='Remarks'){
+        rowHtml+=`<td><button class="btn" onclick="openRemarks(${index})">📝</button></td>`;
+      } else {
+        rowHtml+=`<td contenteditable="true" oninput="updateData(${index},'${k}',this.innerText)">${item[k]}</td>`;
+      }
+    });
     rowHtml+=`<td><button class="btn" style="background:#dc3545;" onclick="deleteRow(${index})">Delete</button></td></tr>`;
     tbody.innerHTML+=rowHtml;
-    if(currentSheet==='credit') toggleAmountInputs(index);
   });
   filterTable();
 }
 
+function updateData(index,key,value){
+  dataStore[currentSheet][index][key]=value;
+}
+
 function deleteRow(index){
-  if(!confirm('Are you sure to delete this row?')) return;
-  sheetData[currentSheet].splice(index,1);
+  dataStore[currentSheet].splice(index,1);
   loadData();
 }
 
-// Remarks Modal
+// Remarks modal
 function openRemarks(index){
-  currentRemarkIndex = index;
-  const item = sheetData[currentSheet][index];
-  const remarkFields = document.getElementById('remarkFields');
-  remarkFields.innerHTML = `<label>Remark:</label>`;
-  const textarea = document.createElement('textarea');
-  textarea.id = 'remarkTextarea';
-  textarea.style.width = '100%';
-  textarea.style.minHeight = '200px';
-  textarea.value = item.remarks||'';
-  remarkFields.appendChild(textarea);
+  currentRemarkIndex=index;
+  const field = document.getElementById('remarkFields');
+  field.innerHTML='';
+  const ta=document.createElement('textarea');
+  ta.value=dataStore[currentSheet][index]['Remarks']||'';
+  ta.style.width='100%'; ta.style.height='150px';
+  field.appendChild(ta);
+  ta.addEventListener('input',()=>autoResize(ta));
+  autoResize(ta);
   document.getElementById('remarkModal').style.display='flex';
 }
 
 function saveRemarks(){
-  const remark = document.getElementById('remarkTextarea').value;
-  sheetData[currentSheet][currentRemarkIndex].remarks = remark;
+  const ta=document.querySelector('#remarkFields textarea');
+  dataStore[currentSheet][currentRemarkIndex]['Remarks']=ta.value;
   closeModal();
   loadData();
 }
 
 function closeModal(){ document.getElementById('remarkModal').style.display='none'; }
 
-function toggleAmountInputs(index){
-  const item = sheetData[currentSheet][index];
-  const div = document.getElementById(`amountDiv-${index}`);
-  if(!div) return;
-  let html='';
-  if(item.amountMode==='Online') html=`<input type="number" placeholder="Online" value="${item.amountOnline||''}" oninput="updateData(${index},'amountOnline',this.value)">`;
-  else if(item.amountMode==='Offline') html=`<input type="number" placeholder="Offline" value="${item.amountOffline||''}" oninput="updateData(${index},'amountOffline',this.value)">`;
-  else if(item.amountMode==='Both') html=`<input type="number" placeholder="Online" value="${item.amountOnline||''}" oninput="updateData(${index},'amountOnline',this.value)"><input type="number" placeholder="Offline" value="${item.amountOffline||''}" oninput="updateData(${index},'amountOffline',this.value)">`;
-  div.innerHTML=html;
-}
+function autoResize(el){ el.style.height='auto'; el.style.height=el.scrollHeight+'px'; }
 
-// Search Filter
+// Filter
 function filterTable(){
-  const filter=document.getElementById('searchBox').value.toLowerCase();
+  const search=document.getElementById('searchBox').value.toLowerCase();
   const dateFilter=document.getElementById('searchDate').value;
-  const rows=document.getElementById('trackerBody').getElementsByTagName('tr');
-  for(let r of rows){
+  document.querySelectorAll('#trackerBody tr').forEach(tr=>{
     let show=false;
-    for(let c of r.cells){
-      if(c.innerText.toLowerCase().includes(filter)){ show=true; break;}
-    }
-    if(currentSheet==='auth' && dateFilter){
-      const dateCell = r.cells[5];
-      if(dateCell){
-        const input = dateCell.querySelector('input[type="date"]');
-        show = show && (input && input.value === dateFilter);
-      }
-    }
-    r.style.display=show?'':'none';
-  }
-}
-
-function clearDateFilter(){
-  document.getElementById('searchDate').value='';
-  filterTable();
-}
-
-// Save all data to Google Sheet
-async function saveToGoogleSheet(){
-  try{
-    const payload = {sheet: currentSheet, data: sheetData[currentSheet]};
-    const res = await fetch(WEBAPP_URL, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(payload)
+    tr.querySelectorAll('td').forEach(td=>{
+      if(td.innerText.toLowerCase().includes(search)) show=true;
     });
-    const text = await res.text();
-    alert(text);
-    loadData();
-  }catch(err){
-    alert("Error saving to sheet: "+err);
-  }
+    if(currentSheet==='auth' && dateFilter){
+      const dateInput = tr.querySelector('input[type="date"]');
+      if(dateInput) show = show && dateInput.value===dateFilter;
+    }
+    tr.style.display=show?'':'none';
+  });
 }
 
-// PDF & JSON (same as your original)
-function createPDF(){ alert("PDF function placeholder"); }
-function createJSON(){ alert("JSON function placeholder"); }
-function uploadJSON(){ alert("Upload JSON placeholder"); }
+function clearDateFilter(){ document.getElementById('searchDate').value=''; filterTable(); }
+
+// ---------- GOOGLE SHEET ----------
+async function saveToSheet(){
+  try{
+    const resp = await fetch(WEBAPP_URL, {
+      method:'POST',
+      body: JSON.stringify({sheet: currentSheet, data: dataStore[currentSheet]}),
+      headers: {'Content-Type':'application/json'}
+    });
+    const result = await resp.json();
+    if(result.success) alert('Saved successfully!');
+    else alert('Error: '+(result.error||'Unknown'));
+  }catch(err){ alert('Error saving to sheet: '+err); }
+}
+
+// ---------- LOAD DATA FROM SHEET ----------
+async function loadFromSheet(){
+  try{
+    const resp = await fetch(WEBAPP_URL+'?sheet='+currentSheet);
+    const result = await resp.json();
+    if(Array.isArray(result)) dataStore[currentSheet]=result;
+    loadData();
+  }catch(err){ console.error('Error loading from sheet', err); }
+}
 
 // Initialize
 showSheet('api');
+loadFromSheet();
 </script>
-
 </body>
 </html>

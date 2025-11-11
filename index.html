@@ -41,8 +41,8 @@
   .dropdown-content button { width:100%; padding:5px; text-align:left; background:none; border:none; cursor:pointer; font-size:13px; }
   .dropdown-content button:hover { background:#007bff; color:white; }
   .dropdown:hover .dropdown-content { display:block; }
-  .auth-date { appearance: none; -webkit-appearance: none; -moz-appearance: none; border: none; background: transparent; color: #333; font-size: 13px; padding: 4px; cursor: text; text-align: center; width: 120px; transition: all 0.2s ease; }
-  .auth-date:focus { outline: none; border-bottom: 1px solid #007bff; background: #f9f9f9; }
+  .auth-date { appearance:none; -webkit-appearance:none; -moz-appearance:none; border:none; background:transparent; color:#333; font-size:13px; padding:4px; cursor:text; text-align:center; width:120px; transition: all 0.2s ease; }
+  .auth-date:focus { outline:none; border-bottom:1px solid #007bff; background:#f9f9f9; }
 </style>
 </head>
 <body>
@@ -53,7 +53,7 @@
   <div class="dropdown">
     <button class="btn">Profile ▾</button>
     <div class="dropdown-content">
-      <button onclick=""><b>SAURAV CHAUHAN</b></button>
+      <button><b>SAURAV CHAUHAN</b></button>
       <button onclick="createPDF()">Create PDF</button>
       <button onclick="createJSON()">Create JSON</button>
       <button onclick="uploadJSON()">Upload JSON</button>
@@ -62,10 +62,10 @@
 </div>
 
 <div class="tabs">
-  <button class="tab-btn active" onclick="showSheet('API Integration')">API Integration</button>
-  <button class="tab-btn" onclick="showSheet('White Label')">White Label</button>
-  <button class="tab-btn" onclick="showSheet('Credit Application')">Credit Application</button>
-  <button class="tab-btn" onclick="showSheet('Authorization')">Authorization</button>
+  <button class="tab-btn active" onclick="showSheet('api')">API Integration</button>
+  <button class="tab-btn" onclick="showSheet('white')">White Label</button>
+  <button class="tab-btn" onclick="showSheet('credit')">Credit Application</button>
+  <button class="tab-btn" onclick="showSheet('auth')">Authorization</button>
 </div>
 
 <div class="search-container">
@@ -85,6 +85,7 @@
   </table>
 </div>
 
+<!-- Modal for Remarks -->
 <div id="remarkModal" class="modal">
   <div class="modal-content">
     <span class="close" onclick="closeModal()">&times;</span>
@@ -97,188 +98,206 @@
 <footer>Developed by <b>SAURAV CHAUHAN</b></footer>
 
 <script>
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyWQmY_nHT2HSizgQIogTrCv_bks0CwoYBWsmz89assip84O1iDb8CjBd7yCv26LQAV/exec";
-let currentSheet = 'API Integration';
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyWQmY_nHT2HSizgQIogTrCv_bks0CwoYBWsmz89assip84O1iDb8CjBd7yCv26LQAV/exec"; // Replace with your deployed Apps Script URL
+
+let currentSheet = 'api';
 let currentRemarkIndex = null;
-
-// Column definitions
+let allData = { api:[], white:[], credit:[], auth:[] };
 const sheetColumns = {
-  "API Integration":["#","AGT Code","Company Name","Info Sent","Info Received","Trade","VAT","Service","XML","NDA","Docs Sent","Received Docs","Invoice","Bill Number","Teams Group","Sent to Sowmya","Testing Started","Live Token","Remarks","Actions"],
-  "White Label":["#","AGT Code","Company Name","Info Sent","Info Received","Trade","VAT","Service","Agreement","NDA","Docs Sent","Received Docs","Invoice","Bill Number","Teams Group","Sent to Sowmya","Testing Started","Live Token","Remarks","Actions"],
-  "Credit Application":["#","AGT Code","Company Name","Info Sent","Info Received","Trade","VAT","Service","Credit","Docs Sent","Received Docs","Status","Amount Mode","Remarks","Actions"],
-  "Authorization":["#","AGT Code","Company Name","Sales Person","Remarks","Date","Actions"]
+  api:["#", "AGT Code","Company Name","Info Sent","Info Received","Trade","VAT","Service","XML","NDA","Docs Sent","Received Docs","Invoice","Bill Number","Teams Group","Sent to Sowmya","Testing Started","Live Token","Remarks","Actions"],
+  white:["#", "AGT Code","Company Name","Info Sent","Info Received","Trade","VAT","Service","Agreement","NDA","Docs Sent","Received Docs","Invoice","Bill Number","Teams Group","Sent to Sowmya","Testing Started","Live Token","Remarks","Actions"],
+  credit:["#", "AGT Code","Company Name","Info Sent","Info Received","Trade","VAT","Service","Credit","Docs Sent","Received Docs","Status","Amount Mode","Remarks","Actions"],
+  auth:["#", "AGT Code","Company Name","Sales Person","Remarks","Date","Actions"]
 };
+const currentSheetSheetNames = { api:"API Integration", white:"White Label", credit:"Credit Application", auth:"Authorization" };
 
-let dataStore = {
-  "API Integration":[],
-  "White Label":[],
-  "Credit Application":[],
-  "Authorization":[]
-};
+// ------------------ Sheet Functions ------------------
 
-// --- Sheet Functions ---
-async function showSheet(sheet){
+async function fetchSheetData(sheet) {
+  const res = await fetch(`${GOOGLE_SCRIPT_URL}?sheetName=${encodeURIComponent(currentSheetSheetNames[sheet])}`);
+  const data = await res.json();
+  allData[sheet] = data.rows || [];
+  loadData();
+}
+
+function saveToSheet(rowIndex) {
+  const row = allData[currentSheet][rowIndex];
+  fetch(GOOGLE_SCRIPT_URL, {
+    method:'POST',
+    body: JSON.stringify({sheetName: currentSheetSheetNames[currentSheet], action:'update', index: rowIndex, row}),
+  }).then(res=>res.json()).then(r=>console.log('Saved', r)).catch(e=>console.error(e));
+}
+
+function addRow() {
+  const base = {agtCode:'', companyName:'', infoSent:false, infoReceived:false, trade:false, vat:false, service:false, xml:false, nda:false, docsSent:false, docsReceived:false, invoice:false, billNumber:'', teams:false, sentSowmya:false, testing:false, live:false, remarks:''};
+  if(currentSheet==='credit') base.credit=false, base.status='Not Approved', base.amountMode='Online', base.amountOnline='', base.amountOffline='';
+  if(currentSheet==='auth') base.salesPerson='', base.date=new Date().toISOString().split('T')[0];
+  allData[currentSheet].push(base);
+  loadData();
+  // Save newly added row to Google Sheet
+  fetch(GOOGLE_SCRIPT_URL, {method:'POST', body: JSON.stringify({sheetName:currentSheetSheetNames[currentSheet], action:'add', row: base})});
+}
+
+function deleteRow(index) {
+  if(!confirm('Are you sure to delete this row?')) return;
+  allData[currentSheet].splice(index,1);
+  loadData();
+  fetch(GOOGLE_SCRIPT_URL, {method:'POST', body: JSON.stringify({sheetName: currentSheetSheetNames[currentSheet], action:'delete', index})});
+}
+
+// ------------------ Table Rendering ------------------
+
+function showSheet(sheet){
   currentSheet = sheet;
   document.querySelectorAll('.tab-btn').forEach(btn=>btn.classList.remove('active'));
   document.querySelector(`.tab-btn[onclick*="${sheet}"]`).classList.add('active');
-  document.getElementById('searchDate').style.display = (sheet==='Authorization') ? 'block' : 'none';
-  document.getElementById('clearDateBtn').style.display = (sheet==='Authorization') ? 'inline-block' : 'none';
-  
+  document.getElementById('searchDate').style.display = (sheet==='auth') ? 'block' : 'none';
+  document.getElementById('clearDateBtn').style.display = (sheet==='auth') ? 'inline-block' : 'none';
   updateTableHead();
-  await fetchDataFromGoogle(sheet);
+  fetchSheetData(sheet);
 }
 
-// --- Table Head ---
-function updateTableHead(){
+function updateTableHead() {
   document.getElementById("tableHead").innerHTML = "<tr>"+sheetColumns[currentSheet].map(h=>`<th>${h}</th>`).join('')+"</tr>";
 }
 
-// --- Fetch from Google Sheets ---
-async function fetchDataFromGoogle(sheetName){
-  try{
-    const res = await fetch(`${GOOGLE_SCRIPT_URL}?sheetName=${encodeURIComponent(sheetName)}`);
-    const json = await res.json();
-    dataStore[sheetName] = json.rows || [];
-    loadData();
-  } catch(err){ console.error("Failed to fetch data:", err); }
-}
-
-// --- Load Table ---
-function loadData(){
-  const data = dataStore[currentSheet];
-  const tbody = document.getElementById('trackerBody'); tbody.innerHTML='';
-  data.forEach((item,index)=>{
-    let rowHtml=`<tr><td>${index+1}</td>
-      <td contenteditable="true" oninput="updateData(${index},'AGT Code',this.innerText)">${item['AGT Code']||''}</td>
-      <td contenteditable="true" oninput="updateData(${index},'Company Name',this.innerText)">${item['Company Name']||''}</td>`;
-    
-    if(currentSheet==='Authorization'){
-      rowHtml+=`<td contenteditable="true" oninput="updateData(${index},'Sales Person',this.innerText)">${item['Sales Person']||''}</td>`;
-      rowHtml+=`<td><button class="btn" onclick="openRemarks(${index})">📝</button></td>`;
-      rowHtml+=`<td><input type="date" class="auth-date" value="${item['Date']||new Date().toISOString().split('T')[0]}" onchange="updateData(${index},'Date',this.value)"></td>`;
-    } else if(currentSheet==='Credit Application'){
-      ["Info Sent","Info Received","Trade","VAT","Service","Credit","Docs Sent","Received Docs"].forEach(f=>{
-        rowHtml+=checkbox(item,index,f);
-      });
-      rowHtml+=`<td><select onchange="updateData(${index},'Status',this.value)">
-        <option ${item['Status']==='Approved'?'selected':''}>Approved</option>
-        <option ${item['Status']==='Not Approved'?'selected':''}>Not Approved</option></select></td>`;
-      rowHtml+=`<td><select onchange="updateData(${index},'Amount Mode',this.value)">
-        <option ${item['Amount Mode']==='Online'?'selected':''}>Online</option>
-        <option ${item['Amount Mode']==='Offline'?'selected':''}>Offline</option>
-        <option ${item['Amount Mode']==='Both'?'selected':''}>Both</option></select></td>`;
-      rowHtml+=`<td><button class="btn" onclick="openRemarks(${index})">📝</button></td>`;
-    } else {
-      ["Info Sent","Info Received","Trade","VAT","Service","XML","NDA","Docs Sent","Received Docs","Invoice"].forEach(f=>{ rowHtml+=checkbox(item,index,f); });
-      rowHtml+=`<td contenteditable="true" oninput="updateData(${index},'Bill Number',this.innerText)">${item['Bill Number']||''}</td>`;
-      ["Teams Group","Sent to Sowmya","Testing Started"].forEach(f=>{ rowHtml+=checkbox(item,index,f); });
-      rowHtml+=`<td><input type="checkbox" ${item['Live Token']?'checked':''} class="checkbox" onchange="updateData(${index},'Live Token',this.checked)"></td>`;
-      rowHtml+=`<td><button class="btn" onclick="openRemarks(${index})">📝</button></td>`;
-    }
-    rowHtml+=`<td><button class="btn" style="background:#dc3545;" onclick="deleteRow(${index})">Delete</button></td></tr>`;
-    tbody.innerHTML+=rowHtml;
-  });
-  filterTable();
-}
-
-// --- Checkbox helper ---
 function checkbox(item,index,field){
   return `<td><input type="checkbox" class="checkbox" ${item[field]?'checked':''} onchange="updateData(${index},'${field}',this.checked)"></td>`;
 }
 
-// --- Add Row ---
-function addRow(){
-  const newRow = {};
-  sheetColumns[currentSheet].forEach(h=>{
-    if(h!=="#" && h!=="Actions") newRow[h]="";
-  });
-  if(currentSheet==='Authorization') newRow['Date']=new Date().toISOString().split('T')[0];
-  dataStore[currentSheet].push(newRow);
-  saveToGoogle(currentSheet,newRow,"add");
-  loadData();
-}
-
-// --- Update Data ---
 function updateData(index,field,value){
-  dataStore[currentSheet][index][field] = value;
-  saveToGoogle(currentSheet,dataStore[currentSheet][index],"update",index);
+  allData[currentSheet][index][field] = value;
+  saveToSheet(index);
   filterTable();
 }
 
-// --- Delete Row ---
-function deleteRow(index){
-  if(!confirm("Are you sure to delete this row?")) return;
-  const deleted = dataStore[currentSheet].splice(index,1)[0];
-  saveToGoogle(currentSheet,deleted,"delete",index);
-  loadData();
+function loadData(){
+  const tbody = document.getElementById('trackerBody'); tbody.innerHTML='';
+  allData[currentSheet].forEach((item,index)=>{
+    let rowHtml=`<tr><td>${index+1}</td>
+    <td contenteditable="true" oninput="updateData(${index},'agtCode',this.innerText)">${item.agtCode||''}</td>
+    <td contenteditable="true" oninput="updateData(${index},'companyName',this.innerText)">${item.companyName||''}</td>`;
+
+    if(currentSheet==='auth'){
+      rowHtml+=`<td contenteditable="true" oninput="updateData(${index},'salesPerson',this.innerText)">${item.salesPerson||''}</td>`;
+      rowHtml+=`<td><button class="btn" onclick="openRemarks(${index})">📝</button></td>`;
+      rowHtml+=`<td><input type="date" class="auth-date" value="${item.date||new Date().toISOString().split('T')[0]}" onchange="updateData(${index},'date',this.value)"></td>`;
+    } else if(currentSheet==='credit'){
+      rowHtml+=checkbox(item,index,'infoSent')+checkbox(item,index,'infoReceived')+checkbox(item,index,'trade')+checkbox(item,index,'vat')+checkbox(item,index,'service')+checkbox(item,index,'credit')+checkbox(item,index,'docsSent')+checkbox(item,index,'docsReceived');
+      rowHtml+=`<td><select onchange="updateData(${index},'status',this.value)">
+        <option ${item.status==='Approved'?'selected':''}>Approved</option>
+        <option ${item.status==='Not Approved'?'selected':''}>Not Approved</option></select></td>`;
+      rowHtml+=`<td><select onchange="updateData(${index},'amountMode',this.value); toggleAmountInputs(${index})">
+        <option ${item.amountMode==='Online'?'selected':''}>Online</option>
+        <option ${item.amountMode==='Offline'?'selected':''}>Offline</option>
+        <option ${item.amountMode==='Both'?'selected':''}>Both</option></select>
+        <div id="amountDiv-${index}" class="amount-box"></div></td>`;
+      rowHtml+=`<td><button class="btn" onclick="openRemarks(${index})">📝</button></td>`;
+    } else {
+      rowHtml+=checkbox(item,index,'infoSent')+checkbox(item,index,'infoReceived')+checkbox(item,index,'trade')+checkbox(item,index,'vat')+checkbox(item,index,'service')+checkbox(item,index,'xml')+checkbox(item,index,'nda')+checkbox(item,index,'docsSent')+checkbox(item,index,'docsReceived')+checkbox(item,index,'invoice');
+      rowHtml+=`<td contenteditable="true" oninput="updateData(${index},'billNumber',this.innerText)">${item.billNumber||''}</td>`;
+      rowHtml+=checkbox(item,index,'teams')+checkbox(item,index,'sentSowmya')+checkbox(item,index,'testing')+`<td><input type="checkbox" ${item.live?'checked':''} class="checkbox" onchange="updateData(${index},'live',this.checked)"></td>`;
+      rowHtml+=`<td><button class="btn" onclick="openRemarks(${index})">📝</button></td>`;
+    }
+
+    rowHtml+=`<td><button class="btn" style="background:#dc3545;" onclick="deleteRow(${index})">Delete</button></td></tr>`;
+    tbody.innerHTML+=rowHtml;
+    if(currentSheet==='credit') toggleAmountInputs(index);
+  });
+  filterTable();
 }
 
-// --- Remarks Modal ---
+// ------------------ Remarks ------------------
+
 function openRemarks(index){
-  currentRemarkIndex=index;
-  const data = dataStore[currentSheet][index];
+  currentRemarkIndex = index;
+  const data = allData[currentSheet][index];
   const remarkFields = document.getElementById('remarkFields');
-  remarkFields.innerHTML=`<label>Remark:</label>`;
-  const textarea=document.createElement('textarea');
-  textarea.id='remarkTextarea';
-  textarea.style.width='100%'; textarea.style.minHeight='200px'; textarea.value = data['Remarks']||'';
-  textarea.addEventListener('input',()=>{ autoResizeWithMax(textarea); });
+  remarkFields.innerHTML = `<label>Remark:</label>`;
+  const textarea = document.createElement('textarea');
+  textarea.id = 'remarkTextarea';
+  textarea.style.width='100%';
+  textarea.style.minHeight='200px';
+  textarea.style.maxHeight='400px';
+  textarea.style.resize='none';
+  textarea.style.overflowY='hidden';
+  textarea.value = data.remarks||'';
   remarkFields.appendChild(textarea);
+
+  textarea.addEventListener('input',()=>autoResizeWithMax(textarea));
+  textarea.addEventListener('keydown', function(e) {
+    if (e.key==='Enter') { e.preventDefault();
+      const start=this.selectionStart;
+      const end=this.selectionEnd;
+      this.value=this.value.substring(0,start)+"\n- "+this.value.substring(end);
+      this.selectionStart=this.selectionEnd=start+3;
+    } else if(this.value.length===0 && e.key!=='Backspace'){
+      setTimeout(()=>{if(!this.value.startsWith('- ')) this.value='- '+this.value;},0);
+    }
+  });
+
   autoResizeWithMax(textarea);
   document.getElementById('remarkModal').style.display='flex';
 }
 
 function saveRemarks(){
   const remark=document.getElementById('remarkTextarea').value;
-  dataStore[currentSheet][currentRemarkIndex]['Remarks']=remark;
-  saveToGoogle(currentSheet,dataStore[currentSheet][currentRemarkIndex],"update",currentRemarkIndex);
-  closeModal(); loadData();
+  allData[currentSheet][currentRemarkIndex].remarks=remark;
+  saveToSheet(currentRemarkIndex);
+  closeModal();
+  loadData();
 }
 
 function closeModal(){ document.getElementById('remarkModal').style.display='none'; }
-function autoResizeWithMax(textarea){ textarea.style.height='auto'; textarea.style.height = Math.min(textarea.scrollHeight,400)+'px'; }
+function autoResizeWithMax(textarea){ textarea.style.height='auto'; textarea.style.height=Math.min(textarea.scrollHeight,400)+'px'; textarea.style.overflowY=(textarea.scrollHeight>400)?'auto':'hidden'; }
 
-// --- Filter ---
+// ------------------ Credit Amount Box ------------------
+
+function toggleAmountInputs(index){
+  const item=allData[currentSheet][index];
+  if(currentSheet!=='credit') return;
+  const div=document.getElementById(`amountDiv-${index}`);
+  let html='';
+  if(item.amountMode==='Online') html=`<input type="number" placeholder="Online" value="${item.amountOnline||''}" oninput="updateData(${index},'amountOnline',this.value)">`;
+  else if(item.amountMode==='Offline') html=`<input type="number" placeholder="Offline" value="${item.amountOffline||''}" oninput="updateData(${index},'amountOffline',this.value)">`;
+  else if(item.amountMode==='Both') html=`<input type="number" placeholder="Online" value="${item.amountOnline||''}" oninput="updateData(${index},'amountOnline',this.value)"><input type="number" placeholder="Offline" value="${item.amountOffline||''}" oninput="updateData(${index},'amountOffline',this.value)">`;
+  div.innerHTML=html;
+}
+
+// ------------------ Search / Filter ------------------
+
 function filterTable(){
-  const filter=document.getElementById('searchBox').value.toLowerCase();
+  const search=document.getElementById('searchBox').value.toLowerCase();
   const dateFilter=document.getElementById('searchDate').value;
-  const rows=document.getElementById('trackerBody').getElementsByTagName('tr');
-  for(let r of rows){
-    let show=false;
-    for(let c of r.cells){
-      if(c.innerText.toLowerCase().includes(filter)){ show=true; break;}
-    }
-    if(currentSheet==='Authorization' && dateFilter){
-      const dateCell = r.cells[5];
-      if(dateCell){
-        const input = dateCell.querySelector('input[type="date"]');
-        show = show && (input && input.value===dateFilter);
+  const tbody=document.getElementById('trackerBody');
+  Array.from(tbody.rows).forEach((row,i)=>{
+    const rowData=allData[currentSheet][i];
+    let match=false;
+    if(search){
+      for(const key in rowData){
+        if(typeof rowData[key]==='string' && rowData[key].toLowerCase().includes(search)){
+          match=true; break;
+        }
       }
+    } else match=true;
+    if(currentSheet==='auth' && dateFilter){
+      match=match && (rowData.date===dateFilter);
     }
-    r.style.display = show?'':'none';
-  }
+    row.style.display=match?'':'none';
+  });
 }
 
 function clearDateFilter(){ document.getElementById('searchDate').value=''; filterTable(); }
 
-// --- PDF/JSON functions (same as before) ---
-function createPDF(){ /* ...same as before... */ }
-function createJSON(){ /* ...same as before... */ }
-function uploadJSON(){ /* ...same as before... */ }
+// ------------------ Profile Actions ------------------
 
-// --- Google Sheets Save ---
-async function saveToGoogle(sheetName,row,action,index=null){
-  try{
-    await fetch(GOOGLE_SCRIPT_URL,{
-      method:"POST",
-      headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify({sheetName,action,row,index})
-    });
-  } catch(err){ console.error("Google Sheets save failed:", err); }
-}
+function createPDF(){ alert("PDF Functionality not implemented yet"); }
+function createJSON(){ alert("JSON Functionality not implemented yet"); }
+function uploadJSON(){ alert("Upload JSON Functionality not implemented yet"); }
 
-// --- Initialize ---
-showSheet(currentSheet);
+// ------------------ Initialize ------------------
+
+document.addEventListener('DOMContentLoaded',()=>{ showSheet('api'); });
 </script>
 
 </body>

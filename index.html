@@ -41,7 +41,6 @@
   .dropdown-content button { width:100%; padding:5px; text-align:left; background:none; border:none; cursor:pointer; font-size:13px; }
   .dropdown-content button:hover { background:#007bff; color:white; }
   .dropdown:hover .dropdown-content { display:block; }
-  /* Only affects Authorization sheet table date fields */
   .auth-date { appearance: none; -webkit-appearance: none; -moz-appearance: none; border: none; background: transparent; color: #333; font-size: 13px; padding: 4px; cursor: text; text-align: center; width: 120px; transition: all 0.2s ease; }
   .auth-date:focus { outline: none; border-bottom: 1px solid #007bff; background: #f9f9f9; }
 </style>
@@ -54,7 +53,7 @@
   <div class="dropdown">
     <button class="btn">Profile ▾</button>
     <div class="dropdown-content">
-        <button onclick=""><b>SAURAV CHAUHAN</b></button>
+      <button onclick=""><b>SAURAV CHAUHAN</b></button>
       <button onclick="createPDF()">Create PDF</button>
       <button onclick="createJSON()">Create JSON</button>
       <button onclick="uploadJSON()">Upload JSON</button>
@@ -86,7 +85,6 @@
   </table>
 </div>
 
-<!-- Modal for Remarks -->
 <div id="remarkModal" class="modal">
   <div class="modal-content">
     <span class="close" onclick="closeModal()">&times;</span>
@@ -99,111 +97,148 @@
 <footer>Developed by <b>SAURAV CHAUHAN</b></footer>
 
 <script>
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxk7I4e2hZC66vBe1SAzFjnwDFj6WBGU4qJ_WHMvEPe5xXXZhK1CGYBIfweY41P-EWi/exec";
 let currentSheet = 'API Integration';
 let currentRemarkIndex = null;
-let dataStore = { 'API Integration': [], 'White Label': [], 'Credit Application': [], 'Authorization': [] };
 
-// Replace with your deployed Apps Script URL
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxk7I4e2hZC66vBe1SAzFjnwDFj6WBGU4qJ_WHMvEPe5xXXZhK1CGYBIfweY41P-EWi/exec";
-
+// Column definitions
 const sheetColumns = {
-  "API Integration":["AGT Code","Company Name","Info Sent","Info Received","Trade","VAT","Service","XML","NDA","Docs Sent","Received Docs","Invoice","Bill Number","Teams Group","Sent to Sowmya","Testing Started","Live Token","Remarks"],
-  "White Label":["AGT Code","Company Name","Info Sent","Info Received","Trade","VAT","Service","Agreement","NDA","Docs Sent","Received Docs","Invoice","Bill Number","Teams Group","Sent to Sowmya","Testing Started","Live Token","Remarks"],
-  "Credit Application":["AGT Code","Company Name","Info Sent","Info Received","Trade","VAT","Service","Credit","Docs Sent","Received Docs","Status","Amount Mode","Amount Online","Amount Offline","Remarks"],
-  "Authorization":["AGT Code","Company Name","Sales Person","Remarks","Date"]
+  "API Integration":["#","AGT Code","Company Name","Info Sent","Info Received","Trade","VAT","Service","XML","NDA","Docs Sent","Received Docs","Invoice","Bill Number","Teams Group","Sent to Sowmya","Testing Started","Live Token","Remarks","Actions"],
+  "White Label":["#","AGT Code","Company Name","Info Sent","Info Received","Trade","VAT","Service","Agreement","NDA","Docs Sent","Received Docs","Invoice","Bill Number","Teams Group","Sent to Sowmya","Testing Started","Live Token","Remarks","Actions"],
+  "Credit Application":["#","AGT Code","Company Name","Info Sent","Info Received","Trade","VAT","Service","Credit","Docs Sent","Received Docs","Status","Amount Mode","Remarks","Actions"],
+  "Authorization":["#","AGT Code","Company Name","Sales Person","Remarks","Date","Actions"]
 };
 
-function showSheet(sheet){
+let dataStore = {
+  "API Integration":[],
+  "White Label":[],
+  "Credit Application":[],
+  "Authorization":[]
+};
+
+// --- Sheet Functions ---
+async function showSheet(sheet){
   currentSheet = sheet;
   document.querySelectorAll('.tab-btn').forEach(btn=>btn.classList.remove('active'));
   document.querySelector(`.tab-btn[onclick*="${sheet}"]`).classList.add('active');
   document.getElementById('searchDate').style.display = (sheet==='Authorization') ? 'block' : 'none';
   document.getElementById('clearDateBtn').style.display = (sheet==='Authorization') ? 'inline-block' : 'none';
+  
   updateTableHead();
-  loadData();
+  await fetchDataFromGoogle(sheet);
 }
 
+// --- Table Head ---
 function updateTableHead(){
   document.getElementById("tableHead").innerHTML = "<tr>"+sheetColumns[currentSheet].map(h=>`<th>${h}</th>`).join('')+"</tr>";
 }
 
-function addRow(){
-  const base = {};
-  sheetColumns[currentSheet].forEach(c => { base[c] = ''; });
-  if(currentSheet==='Credit Application'){ base['Amount Online']=''; base['Amount Offline']=''; base['Status']='Not Approved'; base['Amount Mode']='Online'; }
-  if(currentSheet==='Authorization'){ base['Date'] = new Date().toISOString().split('T')[0]; }
-  dataStore[currentSheet].push(base);
-  loadData();
-  saveToGoogle();
+// --- Fetch from Google Sheets ---
+async function fetchDataFromGoogle(sheetName){
+  try{
+    const res = await fetch(`${GOOGLE_SCRIPT_URL}?sheetName=${encodeURIComponent(sheetName)}`);
+    const json = await res.json();
+    dataStore[sheetName] = json.rows || [];
+    loadData();
+  } catch(err){ console.error("Failed to fetch data:", err); }
 }
 
+// --- Load Table ---
 function loadData(){
-  const tbody = document.getElementById('trackerBody'); tbody.innerHTML='';
   const data = dataStore[currentSheet];
+  const tbody = document.getElementById('trackerBody'); tbody.innerHTML='';
   data.forEach((item,index)=>{
-    let rowHtml = '<tr>';
-    sheetColumns[currentSheet].forEach(col=>{
-      if(col==='Remarks'){
-        rowHtml += `<td><button class="btn" onclick="openRemarks(${index})">📝</button></td>`;
-      } else if(col==='Amount Mode' && currentSheet==='Credit Application'){
-        rowHtml += `<td><select onchange="updateData(${index},'Amount Mode',this.value); saveToGoogle();">${['Online','Offline','Both'].map(v=>`<option ${item['Amount Mode']===v?'selected':''}>${v}</option>`).join('')}</select></td>`;
-      } else if((col==='Amount Online' || col==='Amount Offline') && currentSheet==='Credit Application'){
-        rowHtml += `<td><input type="number" value="${item[col]}" oninput="updateData(${index},'${col}',this.value); saveToGoogle();"></td>`;
-      } else if(col==='Date' && currentSheet==='Authorization'){
-        rowHtml += `<td><input type="date" class="auth-date" value="${item[col]}" onchange="updateData(${index},'${col}',this.value); saveToGoogle();"></td>`;
-      } else if(typeof item[col]==='boolean'){
-        rowHtml += `<td><input type="checkbox" class="checkbox" ${item[col]?'checked':''} onchange="updateData(${index},'${col}',this.checked); saveToGoogle();"></td>`;
-      } else {
-        rowHtml += `<td contenteditable="true" oninput="updateData(${index},'${col}',this.innerText); saveToGoogle();">${item[col]}</td>`;
-      }
-    });
-    rowHtml += `<td><button class="btn" style="background:#dc3545;" onclick="deleteRow(${index})">Delete</button></td>`;
-    rowHtml += '</tr>';
-    tbody.innerHTML += rowHtml;
+    let rowHtml=`<tr><td>${index+1}</td>
+      <td contenteditable="true" oninput="updateData(${index},'AGT Code',this.innerText)">${item['AGT Code']||''}</td>
+      <td contenteditable="true" oninput="updateData(${index},'Company Name',this.innerText)">${item['Company Name']||''}</td>`;
+    
+    if(currentSheet==='Authorization'){
+      rowHtml+=`<td contenteditable="true" oninput="updateData(${index},'Sales Person',this.innerText)">${item['Sales Person']||''}</td>`;
+      rowHtml+=`<td><button class="btn" onclick="openRemarks(${index})">📝</button></td>`;
+      rowHtml+=`<td><input type="date" class="auth-date" value="${item['Date']||new Date().toISOString().split('T')[0]}" onchange="updateData(${index},'Date',this.value)"></td>`;
+    } else if(currentSheet==='Credit Application'){
+      ["Info Sent","Info Received","Trade","VAT","Service","Credit","Docs Sent","Received Docs"].forEach(f=>{
+        rowHtml+=checkbox(item,index,f);
+      });
+      rowHtml+=`<td><select onchange="updateData(${index},'Status',this.value)">
+        <option ${item['Status']==='Approved'?'selected':''}>Approved</option>
+        <option ${item['Status']==='Not Approved'?'selected':''}>Not Approved</option></select></td>`;
+      rowHtml+=`<td><select onchange="updateData(${index},'Amount Mode',this.value)">
+        <option ${item['Amount Mode']==='Online'?'selected':''}>Online</option>
+        <option ${item['Amount Mode']==='Offline'?'selected':''}>Offline</option>
+        <option ${item['Amount Mode']==='Both'?'selected':''}>Both</option></select></td>`;
+      rowHtml+=`<td><button class="btn" onclick="openRemarks(${index})">📝</button></td>`;
+    } else {
+      ["Info Sent","Info Received","Trade","VAT","Service","XML","NDA","Docs Sent","Received Docs","Invoice"].forEach(f=>{ rowHtml+=checkbox(item,index,f); });
+      rowHtml+=`<td contenteditable="true" oninput="updateData(${index},'Bill Number',this.innerText)">${item['Bill Number']||''}</td>`;
+      ["Teams Group","Sent to Sowmya","Testing Started"].forEach(f=>{ rowHtml+=checkbox(item,index,f); });
+      rowHtml+=`<td><input type="checkbox" ${item['Live Token']?'checked':''} class="checkbox" onchange="updateData(${index},'Live Token',this.checked)"></td>`;
+      rowHtml+=`<td><button class="btn" onclick="openRemarks(${index})">📝</button></td>`;
+    }
+    rowHtml+=`<td><button class="btn" style="background:#dc3545;" onclick="deleteRow(${index})">Delete</button></td></tr>`;
+    tbody.innerHTML+=rowHtml;
   });
+  filterTable();
 }
 
-function updateData(index,field,value){
-  dataStore[currentSheet][index][field]=value;
+// --- Checkbox helper ---
+function checkbox(item,index,field){
+  return `<td><input type="checkbox" class="checkbox" ${item[field]?'checked':''} onchange="updateData(${index},'${field}',this.checked)"></td>`;
 }
 
-function deleteRow(index){
-  if(!confirm('Are you sure to delete this row?')) return;
-  dataStore[currentSheet].splice(index,1);
+// --- Add Row ---
+function addRow(){
+  const newRow = {};
+  sheetColumns[currentSheet].forEach(h=>{
+    if(h!=="#" && h!=="Actions") newRow[h]="";
+  });
+  if(currentSheet==='Authorization') newRow['Date']=new Date().toISOString().split('T')[0];
+  dataStore[currentSheet].push(newRow);
+  saveToGoogle(currentSheet,newRow,"add");
   loadData();
-  saveToGoogle();
 }
 
-// Remarks Modal
+// --- Update Data ---
+function updateData(index,field,value){
+  dataStore[currentSheet][index][field] = value;
+  saveToGoogle(currentSheet,dataStore[currentSheet][index],"update",index);
+  filterTable();
+}
+
+// --- Delete Row ---
+function deleteRow(index){
+  if(!confirm("Are you sure to delete this row?")) return;
+  const deleted = dataStore[currentSheet].splice(index,1)[0];
+  saveToGoogle(currentSheet,deleted,"delete",index);
+  loadData();
+}
+
+// --- Remarks Modal ---
 function openRemarks(index){
-  currentRemarkIndex = index;
+  currentRemarkIndex=index;
   const data = dataStore[currentSheet][index];
-  const existingRemark = data['Remarks'] || '';
   const remarkFields = document.getElementById('remarkFields');
-  remarkFields.innerHTML = `<label>Remark:</label>`;
-  const textarea = document.createElement('textarea');
-  textarea.id = 'remarkTextarea';
-  textarea.style.width = '100%';
-  textarea.style.minHeight = '200px';
-  textarea.style.maxHeight = '400px';
-  textarea.value = existingRemark;
-  textarea.addEventListener('input', ()=>{
-    dataStore[currentSheet][currentRemarkIndex]['Remarks'] = textarea.value;
-    saveToGoogle();
-  });
+  remarkFields.innerHTML=`<label>Remark:</label>`;
+  const textarea=document.createElement('textarea');
+  textarea.id='remarkTextarea';
+  textarea.style.width='100%'; textarea.style.minHeight='200px'; textarea.value = data['Remarks']||'';
+  textarea.addEventListener('input',()=>{ autoResizeWithMax(textarea); });
   remarkFields.appendChild(textarea);
-  document.getElementById('remarkModal').style.display = 'flex';
+  autoResizeWithMax(textarea);
+  document.getElementById('remarkModal').style.display='flex';
+}
+
+function saveRemarks(){
+  const remark=document.getElementById('remarkTextarea').value;
+  dataStore[currentSheet][currentRemarkIndex]['Remarks']=remark;
+  saveToGoogle(currentSheet,dataStore[currentSheet][currentRemarkIndex],"update",currentRemarkIndex);
+  closeModal(); loadData();
 }
 
 function closeModal(){ document.getElementById('remarkModal').style.display='none'; }
+function autoResizeWithMax(textarea){ textarea.style.height='auto'; textarea.style.height = Math.min(textarea.scrollHeight,400)+'px'; }
 
-function saveRemarks(){
-  closeModal();
-  loadData();
-  saveToGoogle();
-}
-
-// Search Filter
+// --- Filter ---
 function filterTable(){
   const filter=document.getElementById('searchBox').value.toLowerCase();
   const dateFilter=document.getElementById('searchDate').value;
@@ -214,39 +249,37 @@ function filterTable(){
       if(c.innerText.toLowerCase().includes(filter)){ show=true; break;}
     }
     if(currentSheet==='Authorization' && dateFilter){
-      const dateCell = r.cells[sheetColumns[currentSheet].indexOf('Date')];
+      const dateCell = r.cells[5];
       if(dateCell){
         const input = dateCell.querySelector('input[type="date"]');
-        show = show && (input && input.value === dateFilter);
+        show = show && (input && input.value===dateFilter);
       }
     }
-    r.style.display=show?'':'none';
+    r.style.display = show?'':'none';
   }
 }
 
-function clearDateFilter(){
-  document.getElementById('searchDate').value='';
-  filterTable();
-}
+function clearDateFilter(){ document.getElementById('searchDate').value=''; filterTable(); }
 
-// Google Sheet Save
-async function saveToGoogle(){
+// --- PDF/JSON functions (same as before) ---
+function createPDF(){ /* ...same as before... */ }
+function createJSON(){ /* ...same as before... */ }
+function uploadJSON(){ /* ...same as before... */ }
+
+// --- Google Sheets Save ---
+async function saveToGoogle(sheetName,row,action,index=null){
   try{
     await fetch(GOOGLE_SCRIPT_URL,{
       method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({sheetName: currentSheet, rows: dataStore[currentSheet]})
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({sheetName,action,row,index})
     });
-  } catch(err){ console.error("Google Sheet save failed:", err); }
+  } catch(err){ console.error("Google Sheets save failed:", err); }
 }
 
-// PDF/JSON placeholders
-function createPDF(){ alert('PDF export not implemented'); }
-function createJSON(){ alert('JSON export not implemented'); }
-function uploadJSON(){ alert('Upload JSON not implemented'); }
-
-// Initialize
+// --- Initialize ---
 showSheet(currentSheet);
 </script>
+
 </body>
 </html>

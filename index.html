@@ -5,52 +5,78 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Multi-Sheet Tracker</title>
 <style>
-body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;margin:0;padding:20px;background:#f4f6f9;}
-h1{text-align:center;margin-bottom:20px;}
-.tabs{display:flex;justify-content:center;flex-wrap:wrap;margin-bottom:10px;}
-.tab-btn{padding:10px 20px;margin:5px;cursor:pointer;border:none;border-radius:5px 5px 0 0;background:#ddd;font-weight:600;white-space:nowrap;}
-.tab-btn.active{background:#007bff;color:white;}
-.search-container{text-align:center;margin-bottom:10px;display:flex;justify-content:center;align-items:center;gap:5px;}
-#searchBox,#searchDate{padding:5px 10px;width:300px;max-width:90%;border-radius:5px;border:1px solid #ccc;font-size:14px;}
-.btn{background:#007bff;color:white;padding:4px 8px;border:none;border-radius:4px;cursor:pointer;font-size:12px;}
-.btn:hover{background:#0056b3;}
-.table-container{overflow:auto;max-height:600px;margin-bottom:30px;background:white;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);}
-table{width:100%;border-collapse:collapse;min-width:1200px;}
-th,td{border:1px solid #ddd;text-align:center;padding:6px;font-size:13px;word-wrap:break-word;vertical-align:middle;}
-th{background:#007bff;color:white;position:sticky;top:0;z-index:10;}
-tr:nth-child(even){background:#f9f9f9;}
-tr:hover{background:#f1f1f1;}
-td:nth-child(even){background:#f0f8ff;}
-input[type=text],select,textarea{width:100%;border:none;font-size:13px;box-sizing:border-box;padding:2px;}
-input[type=text]:focus,select:focus,textarea:focus{outline:none;border:1px solid #007bff;}
-textarea{resize:none;overflow:hidden;}
-.checkbox{transform:scale(1.5);display:block;margin:auto;}
-.modal{display:none;position:fixed;z-index:999;left:0;top:0;width:100%;height:100%;background: rgba(0,0,0,0.5);justify-content:center;align-items:center;}
-.modal-content{background:white;padding:20px;border-radius:8px;width:100%;max-width:600px;max-height:90%;overflow-y:auto;box-shadow:0 4px 15px rgba(0,0,0,0.2);}
-.modal h2{margin-top:0;color:#da2121;}
-.close{float:right;font-size:22px;font-weight:bold;color:#333;cursor:pointer;}
-.auth-date{border:none;background:transparent;color:#333;font-size:13px;padding:4px;cursor:text;text-align:center;width:120px;}
-.auth-date:focus{outline:none;border-bottom:1px solid #007bff;background:#f9f9f9;}
+  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin:0; padding:20px; background:#f4f6f9; position:relative; }
+  h1 { text-align:center; color:#333; margin-bottom:20px; }
+  .tabs { display:flex; justify-content:center; flex-wrap:wrap; margin-bottom:10px; }
+  .tab-btn { padding:10px 20px; margin:5px; cursor:pointer; border:none; border-radius:5px 5px 0 0; background:#ddd; font-weight:600; white-space:nowrap; }
+  .tab-btn.active { background:#007bff; color:white; }
+  #searchBox, #searchDate { padding:5px 10px; width:300px; max-width:90%; border-radius:5px; border:1px solid #ccc; font-size:14px; }
+  .search-container { text-align:center; margin-bottom:10px; display:flex; justify-content:center; align-items:center; gap:5px; }
+  .btn { background:#007bff; color:white; padding:4px 8px; border:none; border-radius:4px; cursor:pointer; font-size:12px; }
+  .btn:hover { background:#0056b3; }
+  .table-container { overflow-x:auto; overflow-y:auto; max-height:600px; margin-bottom:30px; background:white; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
+  table { width:100%; border-collapse:collapse; min-width:1200px; }
+  th, td { border:1px solid #ddd; text-align:center; padding:6px; font-size:13px; word-wrap:break-word; vertical-align:middle; }
+  th { background:#007bff; color:white; position:sticky; top:0; z-index:10; }
+  tr:nth-child(even) { background:#f9f9f9; }
+  tr:hover { background:#f1f1f1; }
+  td:nth-child(even) { background:#f0f8ff; }
+  input[type=text], input[type=number], select, textarea { width:100%; border:none; font-size:13px; box-sizing:border-box; padding:2px; }
+  input[type=text]:focus, input[type=number]:focus, select:focus, textarea:focus { outline:none; border:1px solid #007bff; }
+  textarea { resize:none; overflow:hidden; }
+  .checkbox { transform:scale(1.5); display:block; margin:auto; }
+  .modal { display:none; position:fixed; z-index:999; left:0; top:0; width:100%; height:100%; background: rgba(0,0,0,0.5); justify-content:center; align-items:center; }
+  .modal-content { background:white; padding:20px; border-radius:8px; width:100%; max-width:600px;  max-height:90%; overflow-y:auto; box-shadow:0 4px 15px rgba(0,0,0,0.2); }
+  .modal h2 { margin-top:0; color:#da2121; }
+  .close { float:right; font-size:22px; font-weight:bold; color:#333; cursor:pointer; }
+  label { font-weight:500; margin-top:5px; display:block; font-size:13px; }
+  .amount-box { display:flex; flex-wrap:wrap; gap:5px; justify-content:center; align-items:center; }
+  .amount-box input { flex:1 1 45%; min-width:70px; }
+  .amount-box label { font-size:12px; margin:0 5px; white-space:nowrap; }
+  #logo { position:absolute; top:10px; left:10px; width:60px; height:auto; }
+  footer { position:fixed; bottom:0; right:0; background:#007bff; color:white; padding:5px 15px; border-radius:8px 0 0 0; font-size:14px; }
+  .profile { position:absolute; top:10px; right:30px; }
+  .dropdown { position:relative; display:inline-block; }
+  .dropdown-content { display:none; position:absolute; background-color:white; min-width:120px; box-shadow:0px 8px 16px 0px rgba(0,0,0,0.2); z-index:1000; border-radius:5px; }
+  .dropdown-content button { width:100%; padding:5px; text-align:left; background:none; border:none; cursor:pointer; font-size:13px; }
+  .dropdown-content button:hover { background:#007bff; color:white; }
+  .dropdown:hover .dropdown-content { display:block; }
+  /* Only affects Authorization sheet table date fields */
+  .auth-date { appearance: none; -webkit-appearance: none; -moz-appearance: none; border: none; background: transparent; color: #333; font-size: 13px; padding: 4px; cursor: text; text-align: center; width: 120px; transition: all 0.2s ease; }
+  .auth-date:focus { outline: none; border-bottom: 1px solid #007bff; background: #f9f9f9; }
 </style>
 </head>
 <body>
 
-<h1>Multi-Sheet Tracker</h1>
+<img src="123.png" id="logo" alt="Logo" style="width:150px; height:auto;">
+
+<div class="profile">
+  <div class="dropdown">
+    <button class="btn">Profile ▾</button>
+    <div class="dropdown-content">
+        <button onclick=""><b>SAURAV CHAUHAN</b></button>
+      <button onclick="createPDF()">Create PDF</button>
+      <button onclick="createJSON()">Create JSON</button>
+      <button onclick="uploadJSON()">Upload JSON</button>
+    </div>
+  </div>
+</div>
 
 <div class="tabs">
-  <button class="tab-btn active" onclick="switchSheet('API Integration')">API Integration</button>
-  <button class="tab-btn" onclick="switchSheet('White Label')">White Label</button>
-  <button class="tab-btn" onclick="switchSheet('Credit Application')">Credit Application</button>
-  <button class="tab-btn" onclick="switchSheet('Authorization')">Authorization</button>
+  <button class="tab-btn active" onclick="showSheet('API Integration')">API Integration</button>
+  <button class="tab-btn" onclick="showSheet('White Label')">White Label</button>
+  <button class="tab-btn" onclick="showSheet('Credit Application')">Credit Application</button>
+  <button class="tab-btn" onclick="showSheet('Authorization')">Authorization</button>
 </div>
 
 <div class="search-container">
   <input type="text" id="searchBox" placeholder="Search..." oninput="filterTable()">
   <input type="date" id="searchDate" placeholder="Search by Date..." onchange="filterTable()" style="display:none;">
+  <button class="btn" id="clearDateBtn" onclick="clearDateFilter()" style="display:none;">Clear</button>
 </div>
 
 <div style="text-align:center; margin:10px 0;">
-  <button class="btn" onclick="addRow()">+ Add Row</button>
+  <button class="btn" onclick="addRow()">+ Add</button>
 </div>
 
 <div class="table-container">
@@ -60,132 +86,167 @@ textarea{resize:none;overflow:hidden;}
   </table>
 </div>
 
-<!-- Remarks Modal -->
+<!-- Modal for Remarks -->
 <div id="remarkModal" class="modal">
   <div class="modal-content">
     <span class="close" onclick="closeModal()">&times;</span>
     <h2>Remark</h2>
-    <textarea id="remarkTextarea" style="width:100%; min-height:150px;"></textarea>
+    <div id="remarkFields"></div>
     <button class="btn" onclick="saveRemarks()">Save Remark</button>
   </div>
 </div>
 
+<footer>Developed by <b>SAURAV CHAUHAN</b></footer>
+
 <script>
-const GOOGLE_SCRIPT_URL = "YOUR_DEPLOYED_WEB_APP_URL_HERE"; // replace with your web app URL
+let currentSheet = 'API Integration';
+let currentRemarkIndex = null;
+let dataStore = { 'API Integration': [], 'White Label': [], 'Credit Application': [], 'Authorization': [] };
 
-let currentSheet='API Integration';
-let dataStore={};
-let currentRemarkIndex=null;
+// Replace with your deployed Apps Script URL
+const GOOGLE_SCRIPT_URL = "YOUR_WEB_APP_URL_HERE";
 
-const sheetColumns={
-  "API Integration":["AGT Code","Company Name","Info Sent","Info Received","Trade","VAT","Service","Remarks"],
-  "White Label":["AGT Code","Company Name","Info Sent","Info Received","Trade","VAT","Service","Remarks"],
-  "Credit Application":["AGT Code","Company Name","Credit","Docs Sent","Status","Amount Mode","Remarks"],
+const sheetColumns = {
+  "API Integration":["AGT Code","Company Name","Info Sent","Info Received","Trade","VAT","Service","XML","NDA","Docs Sent","Received Docs","Invoice","Bill Number","Teams Group","Sent to Sowmya","Testing Started","Live Token","Remarks"],
+  "White Label":["AGT Code","Company Name","Info Sent","Info Received","Trade","VAT","Service","Agreement","NDA","Docs Sent","Received Docs","Invoice","Bill Number","Teams Group","Sent to Sowmya","Testing Started","Live Token","Remarks"],
+  "Credit Application":["AGT Code","Company Name","Info Sent","Info Received","Trade","VAT","Service","Credit","Docs Sent","Received Docs","Status","Amount Mode","Amount Online","Amount Offline","Remarks"],
   "Authorization":["AGT Code","Company Name","Sales Person","Remarks","Date"]
 };
 
-// Initialize empty dataStore
-for(let s in sheetColumns) dataStore[s]=[];
-
-function switchSheet(sheet){
-  currentSheet=sheet;
+function showSheet(sheet){
+  currentSheet = sheet;
   document.querySelectorAll('.tab-btn').forEach(btn=>btn.classList.remove('active'));
   document.querySelector(`.tab-btn[onclick*="${sheet}"]`).classList.add('active');
-  document.getElementById('searchDate').style.display = (sheet==='Authorization')?'inline-block':'none';
-  renderTable();
+  document.getElementById('searchDate').style.display = (sheet==='Authorization') ? 'block' : 'none';
+  document.getElementById('clearDateBtn').style.display = (sheet==='Authorization') ? 'inline-block' : 'none';
+  updateTableHead();
+  loadData();
+}
+
+function updateTableHead(){
+  document.getElementById("tableHead").innerHTML = "<tr>"+sheetColumns[currentSheet].map(h=>`<th>${h}</th>`).join('')+"</tr>";
 }
 
 function addRow(){
-  const newRow={};
-  sheetColumns[currentSheet].forEach(col=>newRow[col]='');
-  dataStore[currentSheet].push(newRow);
-  renderTable();
+  const base = {};
+  sheetColumns[currentSheet].forEach(c => { base[c] = ''; });
+  if(currentSheet==='Credit Application'){ base['Amount Online']=''; base['Amount Offline']=''; base['Status']='Not Approved'; base['Amount Mode']='Online'; }
+  if(currentSheet==='Authorization'){ base['Date'] = new Date().toISOString().split('T')[0]; }
+  dataStore[currentSheet].push(base);
+  loadData();
   saveToGoogle();
 }
 
-function renderTable(){
-  const tbody=document.getElementById('trackerBody');
-  tbody.innerHTML='';
-  dataStore[currentSheet].forEach((row,index)=>{
-    const tr=document.createElement('tr');
+function loadData(){
+  const tbody = document.getElementById('trackerBody'); tbody.innerHTML='';
+  const data = dataStore[currentSheet];
+  data.forEach((item,index)=>{
+    let rowHtml = '<tr>';
     sheetColumns[currentSheet].forEach(col=>{
-      const td=document.createElement('td');
       if(col==='Remarks'){
-        td.innerHTML=`<button class="btn" onclick="openRemarks(${index})">📝</button>`;
+        rowHtml += `<td><button class="btn" onclick="openRemarks(${index})">📝</button></td>`;
+      } else if(col==='Amount Mode' && currentSheet==='Credit Application'){
+        rowHtml += `<td><select onchange="updateData(${index},'Amount Mode',this.value); saveToGoogle();">${['Online','Offline','Both'].map(v=>`<option ${item['Amount Mode']===v?'selected':''}>${v}</option>`).join('')}</select></td>`;
+      } else if((col==='Amount Online' || col==='Amount Offline') && currentSheet==='Credit Application'){
+        rowHtml += `<td><input type="number" value="${item[col]}" oninput="updateData(${index},'${col}',this.value); saveToGoogle();"></td>`;
+      } else if(col==='Date' && currentSheet==='Authorization'){
+        rowHtml += `<td><input type="date" class="auth-date" value="${item[col]}" onchange="updateData(${index},'${col}',this.value); saveToGoogle();"></td>`;
+      } else if(typeof item[col]==='boolean'){
+        rowHtml += `<td><input type="checkbox" class="checkbox" ${item[col]?'checked':''} onchange="updateData(${index},'${col}',this.checked); saveToGoogle();"></td>`;
       } else {
-        td.contentEditable=true;
-        td.innerText=row[col];
-        td.addEventListener('input', e=>{
-          row[col]=e.target.innerText;
-          saveToGoogle();
-        });
+        rowHtml += `<td contenteditable="true" oninput="updateData(${index},'${col}',this.innerText); saveToGoogle();">${item[col]}</td>`;
       }
-      tr.appendChild(td);
     });
-    tbody.appendChild(tr);
+    rowHtml += `<td><button class="btn" style="background:#dc3545;" onclick="deleteRow(${index})">Delete</button></td>`;
+    rowHtml += '</tr>';
+    tbody.innerHTML += rowHtml;
   });
-  renderTableHead();
 }
 
-function renderTableHead(){
-  const thead=document.getElementById('tableHead');
-  thead.innerHTML='';
-  const tr=document.createElement('tr');
-  sheetColumns[currentSheet].forEach(col=>{
-    const th=document.createElement('th');
-    th.innerText=col;
-    tr.appendChild(th);
-  });
-  thead.appendChild(tr);
+function updateData(index,field,value){
+  dataStore[currentSheet][index][field]=value;
 }
 
-function openRemarks(index){
-  currentRemarkIndex=index;
-  document.getElementById('remarkTextarea').value = dataStore[currentSheet][index]['Remarks'] || '';
-  document.getElementById('remarkModal').style.display='flex';
-}
-
-function saveRemarks(){
-  dataStore[currentSheet][currentRemarkIndex]['Remarks'] = document.getElementById('remarkTextarea').value;
-  document.getElementById('remarkModal').style.display='none';
-  renderTable();
+function deleteRow(index){
+  if(!confirm('Are you sure to delete this row?')) return;
+  dataStore[currentSheet].splice(index,1);
+  loadData();
   saveToGoogle();
+}
+
+// Remarks Modal
+function openRemarks(index){
+  currentRemarkIndex = index;
+  const data = dataStore[currentSheet][index];
+  const existingRemark = data['Remarks'] || '';
+  const remarkFields = document.getElementById('remarkFields');
+  remarkFields.innerHTML = `<label>Remark:</label>`;
+  const textarea = document.createElement('textarea');
+  textarea.id = 'remarkTextarea';
+  textarea.style.width = '100%';
+  textarea.style.minHeight = '200px';
+  textarea.style.maxHeight = '400px';
+  textarea.value = existingRemark;
+  textarea.addEventListener('input', ()=>{
+    dataStore[currentSheet][currentRemarkIndex]['Remarks'] = textarea.value;
+    saveToGoogle();
+  });
+  remarkFields.appendChild(textarea);
+  document.getElementById('remarkModal').style.display = 'flex';
 }
 
 function closeModal(){ document.getElementById('remarkModal').style.display='none'; }
 
+function saveRemarks(){
+  closeModal();
+  loadData();
+  saveToGoogle();
+}
+
+// Search Filter
 function filterTable(){
   const filter=document.getElementById('searchBox').value.toLowerCase();
   const dateFilter=document.getElementById('searchDate').value;
-  document.querySelectorAll('#trackerBody tr').forEach((tr,index)=>{
-    let show=true;
-    sheetColumns[currentSheet].forEach((col,i)=>{
-      if(tr.children[i].innerText.toLowerCase().includes(filter)===false) show=false;
-    });
-    if(currentSheet==='Authorization' && dateFilter){
-      const dateColIndex=sheetColumns[currentSheet].indexOf('Date');
-      if(tr.children[dateColIndex].innerText!==dateFilter) show=false;
+  const rows=document.getElementById('trackerBody').getElementsByTagName('tr');
+  for(let r of rows){
+    let show=false;
+    for(let c of r.cells){
+      if(c.innerText.toLowerCase().includes(filter)){ show=true; break;}
     }
-    tr.style.display = show?'':'none';
-  });
+    if(currentSheet==='Authorization' && dateFilter){
+      const dateCell = r.cells[sheetColumns[currentSheet].indexOf('Date')];
+      if(dateCell){
+        const input = dateCell.querySelector('input[type="date"]');
+        show = show && (input && input.value === dateFilter);
+      }
+    }
+    r.style.display=show?'':'none';
+  }
 }
 
-// ==== Google Sheets auto-save ====
+function clearDateFilter(){
+  document.getElementById('searchDate').value='';
+  filterTable();
+}
+
+// Google Sheet Save
 async function saveToGoogle(){
   try{
-    const response = await fetch(GOOGLE_SCRIPT_URL,{
-      method:'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({sheetName:currentSheet, rows:dataStore[currentSheet]})
+    await fetch(GOOGLE_SCRIPT_URL,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({sheetName: currentSheet, rows: dataStore[currentSheet]})
     });
-    const result=await response.json();
-    if(result.status!=='success') console.error("Save error:", result.message);
-  }catch(err){ console.error("Save failed:", err); }
+  } catch(err){ console.error("Google Sheet save failed:", err); }
 }
 
-// Initialize
-switchSheet(currentSheet);
-</script>
+// PDF/JSON placeholders
+function createPDF(){ alert('PDF export not implemented'); }
+function createJSON(){ alert('JSON export not implemented'); }
+function uploadJSON(){ alert('Upload JSON not implemented'); }
 
+// Initialize
+showSheet(currentSheet);
+</script>
 </body>
 </html>

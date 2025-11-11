@@ -5,36 +5,32 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Multi-Sheet Tracker</title>
 <style>
-  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin:0; padding:20px; background:#f4f6f9; }
-  h1 { text-align:center; color:#333; margin-bottom:20px; }
-  .tabs { display:flex; justify-content:center; flex-wrap:wrap; margin-bottom:10px; }
-  .tab-btn { padding:10px 20px; margin:5px; cursor:pointer; border:none; border-radius:5px 5px 0 0; background:#ddd; font-weight:600; white-space:nowrap; }
-  .tab-btn.active { background:#007bff; color:white; }
-  #searchBox, #searchDate { padding:5px 10px; width:300px; max-width:90%; border-radius:5px; border:1px solid #ccc; font-size:14px; }
-  .search-container { text-align:center; margin-bottom:10px; display:flex; justify-content:center; align-items:center; gap:5px; }
-  .btn { background:#007bff; color:white; padding:4px 8px; border:none; border-radius:4px; cursor:pointer; font-size:12px; }
-  .btn:hover { background:#0056b3; }
-  .table-container { overflow-x:auto; overflow-y:auto; max-height:600px; margin-bottom:30px; background:white; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.1); }
-  table { width:100%; border-collapse:collapse; min-width:1200px; }
-  th, td { border:1px solid #ddd; text-align:center; padding:6px; font-size:13px; word-wrap:break-word; vertical-align:middle; }
-  th { background:#007bff; color:white; position:sticky; top:0; z-index:10; }
-  tr:nth-child(even) { background:#f9f9f9; }
-  tr:hover { background:#f1f1f1; }
-  td:nth-child(even) { background:#f0f8ff; }
-  input[type=text], input[type=number], select, textarea { width:100%; border:none; font-size:13px; box-sizing:border-box; padding:2px; }
-  input[type=text]:focus, input[type=number]:focus, select:focus, textarea:focus { outline:none; border:1px solid #007bff; }
-  textarea { resize:none; overflow:hidden; }
-  .checkbox { transform:scale(1.5); display:block; margin:auto; }
-  .modal { display:none; position:fixed; z-index:999; left:0; top:0; width:100%; height:100%; background: rgba(0,0,0,0.5); justify-content:center; align-items:center; }
-  .modal-content { background:white; padding:20px; border-radius:8px; width:100%; max-width:600px;  max-height:90%; overflow-y:auto; box-shadow:0 4px 15px rgba(0,0,0,0.2); }
-  .modal h2 { margin-top:0; color:#da2121; }
-  .close { float:right; font-size:22px; font-weight:bold; color:#333; cursor:pointer; }
-  label { font-weight:500; margin-top:5px; display:block; font-size:13px; }
-  .amount-box { display:flex; flex-wrap:wrap; gap:5px; justify-content:center; align-items:center; }
-  .amount-box input { flex:1 1 45%; min-width:70px; }
-  .amount-box label { font-size:12px; margin:0 5px; white-space:nowrap; }
-  .auth-date { border:none; background:transparent; color:#333; font-size:13px; padding:4px; cursor:text; text-align:center; width:120px; }
-  .auth-date:focus { outline:none; border-bottom:1px solid #007bff; background:#f9f9f9; }
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;margin:0;padding:20px;background:#f4f6f9;}
+h1{text-align:center;margin-bottom:20px;}
+.tabs{display:flex;justify-content:center;flex-wrap:wrap;margin-bottom:10px;}
+.tab-btn{padding:10px 20px;margin:5px;cursor:pointer;border:none;border-radius:5px 5px 0 0;background:#ddd;font-weight:600;white-space:nowrap;}
+.tab-btn.active{background:#007bff;color:white;}
+.search-container{text-align:center;margin-bottom:10px;display:flex;justify-content:center;align-items:center;gap:5px;}
+#searchBox,#searchDate{padding:5px 10px;width:300px;max-width:90%;border-radius:5px;border:1px solid #ccc;font-size:14px;}
+.btn{background:#007bff;color:white;padding:4px 8px;border:none;border-radius:4px;cursor:pointer;font-size:12px;}
+.btn:hover{background:#0056b3;}
+.table-container{overflow:auto;max-height:600px;margin-bottom:30px;background:white;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.1);}
+table{width:100%;border-collapse:collapse;min-width:1200px;}
+th,td{border:1px solid #ddd;text-align:center;padding:6px;font-size:13px;word-wrap:break-word;vertical-align:middle;}
+th{background:#007bff;color:white;position:sticky;top:0;z-index:10;}
+tr:nth-child(even){background:#f9f9f9;}
+tr:hover{background:#f1f1f1;}
+td:nth-child(even){background:#f0f8ff;}
+input[type=text],select,textarea{width:100%;border:none;font-size:13px;box-sizing:border-box;padding:2px;}
+input[type=text]:focus,select:focus,textarea:focus{outline:none;border:1px solid #007bff;}
+textarea{resize:none;overflow:hidden;}
+.checkbox{transform:scale(1.5);display:block;margin:auto;}
+.modal{display:none;position:fixed;z-index:999;left:0;top:0;width:100%;height:100%;background: rgba(0,0,0,0.5);justify-content:center;align-items:center;}
+.modal-content{background:white;padding:20px;border-radius:8px;width:100%;max-width:600px;max-height:90%;overflow-y:auto;box-shadow:0 4px 15px rgba(0,0,0,0.2);}
+.modal h2{margin-top:0;color:#da2121;}
+.close{float:right;font-size:22px;font-weight:bold;color:#333;cursor:pointer;}
+.auth-date{border:none;background:transparent;color:#333;font-size:13px;padding:4px;cursor:text;text-align:center;width:120px;}
+.auth-date:focus{outline:none;border-bottom:1px solid #007bff;background:#f9f9f9;}
 </style>
 </head>
 <body>
@@ -74,38 +70,33 @@
   </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-
 <script>
-// Google Sheet Web App URL
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4yzwJqoKLMmacSbJbFcJwvo7s0IfDUKOE683Ty6T1J9R7PA1AZ6rt6HchPcNlxDjL/exec"; // paste your Apps Script URL
+const GOOGLE_SCRIPT_URL = "YOUR_DEPLOYED_WEB_APP_URL_HERE"; // replace with your web app URL
 
-let currentSheet = 'API Integration';
-let dataStore = {};
-let currentRemarkIndex = null;
+let currentSheet='API Integration';
+let dataStore={};
+let currentRemarkIndex=null;
 
-// Columns for each sheet
-const sheetColumns = {
+const sheetColumns={
   "API Integration":["AGT Code","Company Name","Info Sent","Info Received","Trade","VAT","Service","Remarks"],
   "White Label":["AGT Code","Company Name","Info Sent","Info Received","Trade","VAT","Service","Remarks"],
   "Credit Application":["AGT Code","Company Name","Credit","Docs Sent","Status","Amount Mode","Remarks"],
   "Authorization":["AGT Code","Company Name","Sales Person","Remarks","Date"]
 };
 
-// Initialize dataStore for each sheet
-for (let s in sheetColumns) dataStore[s] = [];
+// Initialize empty dataStore
+for(let s in sheetColumns) dataStore[s]=[];
 
 function switchSheet(sheet){
-  currentSheet = sheet;
+  currentSheet=sheet;
   document.querySelectorAll('.tab-btn').forEach(btn=>btn.classList.remove('active'));
   document.querySelector(`.tab-btn[onclick*="${sheet}"]`).classList.add('active');
   document.getElementById('searchDate').style.display = (sheet==='Authorization')?'inline-block':'none';
-  loadData();
+  renderTable();
 }
 
 function addRow(){
-  const newRow = {};
+  const newRow={};
   sheetColumns[currentSheet].forEach(col=>newRow[col]='');
   dataStore[currentSheet].push(newRow);
   renderTable();
@@ -113,16 +104,16 @@ function addRow(){
 }
 
 function renderTable(){
-  const tbody = document.getElementById('trackerBody');
+  const tbody=document.getElementById('trackerBody');
   tbody.innerHTML='';
   dataStore[currentSheet].forEach((row,index)=>{
-    let tr=document.createElement('tr');
+    const tr=document.createElement('tr');
     sheetColumns[currentSheet].forEach(col=>{
       const td=document.createElement('td');
       if(col==='Remarks'){
         td.innerHTML=`<button class="btn" onclick="openRemarks(${index})">📝</button>`;
       } else {
-        td.contentEditable="true";
+        td.contentEditable=true;
         td.innerText=row[col];
         td.addEventListener('input', e=>{
           row[col]=e.target.innerText;
@@ -172,28 +163,27 @@ function filterTable(){
       if(tr.children[i].innerText.toLowerCase().includes(filter)===false) show=false;
     });
     if(currentSheet==='Authorization' && dateFilter){
-      const dateColIndex = sheetColumns[currentSheet].indexOf('Date');
-      if(tr.children[dateColIndex].innerText !== dateFilter) show=false;
+      const dateColIndex=sheetColumns[currentSheet].indexOf('Date');
+      if(tr.children[dateColIndex].innerText!==dateFilter) show=false;
     }
     tr.style.display = show?'':'none';
   });
 }
 
-// ==== Google Sheets integration ====
+// ==== Google Sheets auto-save ====
 async function saveToGoogle(){
-  try {
-    await fetch(GOOGLE_SCRIPT_URL,{
+  try{
+    const response = await fetch(GOOGLE_SCRIPT_URL,{
       method:'POST',
-      mode:'no-cors',
-      body: JSON.stringify({sheetName: currentSheet, rows: dataStore[currentSheet]})
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({sheetName:currentSheet, rows:dataStore[currentSheet]})
     });
-    console.log("Data saved to Google Sheets:", currentSheet);
-  } catch(err){
-    console.error("Google Sheets save error:", err);
-  }
+    const result=await response.json();
+    if(result.status!=='success') console.error("Save error:", result.message);
+  }catch(err){ console.error("Save failed:", err); }
 }
 
-// Initialize table
+// Initialize
 switchSheet(currentSheet);
 </script>
 
